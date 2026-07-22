@@ -1,0 +1,10 @@
+streamlit>=1.38
+requests>=2.31
+pandas>=2.2
+plotly>=5.22
+streamlit-autorefresh>=1.0.1
+pillow>=10.3
+
+# apenas para rodar o mock da API localmente (não é dependência do dashboard em si)
+fastapi>=0.111
+uvicorn>=0.30
