@@ -1,0 +1,14 @@
+fastapi>=0.111
+uvicorn[standard]>=0.30
+sqlalchemy>=2.0
+psycopg2-binary>=2.9
+python-dotenv>=1.0
+pydantic>=2.7
+python-multipart>=0.0.9
+pillow>=10.3
+
+# Machine learning (YOLOv11 - modo classificação)
+ultralytics>=8.3
+
+# MQTT - só vai ser usado quando o ESP32 estiver pronto (Fase 2)
+paho-mqtt>=2.1

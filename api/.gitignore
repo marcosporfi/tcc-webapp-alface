@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+
+# Dataset e resultados de treino são pesados demais para o Git
+ml/raw_dataset/
+ml/dataset/
+ml/runs/
+*.pt
+
+# Imagens recebidas para análise
+uploads/

@@ -30,7 +30,7 @@ col2.metric("💧 Umidade", f"{leitura['umidade']} %")
 col3.metric("☀️ Luminosidade", f"{leitura['luminosidade']}")
 
 st.info(
-    "Este painel consome uma API mock local para desenvolvimento "
-    "(`mock_api.py`). Assim que a API real do back-end estiver pronta, "
-    "basta apontar `API_BASE_URL` para ela — nenhuma página precisa mudar."
+    "Este painel se conecta à API definida em `API_BASE_URL` "
+    "(atualmente configurada para o back-end real, quando disponível, "
+    "ou para a API mock local durante o desenvolvimento)."
 )
