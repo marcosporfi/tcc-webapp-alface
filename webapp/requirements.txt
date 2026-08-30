@@ -8,3 +8,5 @@ pillow>=10.3
 # apenas para rodar o mock da API localmente (não é dependência do dashboard em si)
 fastapi>=0.111
 uvicorn>=0.30
+passlib[bcrypt]>=1.7
+python-jose[cryptography]>=3.3

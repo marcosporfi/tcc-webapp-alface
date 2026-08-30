@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import Base, SessionLocal, engine
 from app.models import Estufa
-from app.routers import alerts, detections, sensors
+from app.routers import alerts, auth, detections, sensors
 
 # Cria as tabelas no banco automaticamente se ainda não existirem
 # (equivalente a rodar as migrações na primeira vez)
@@ -43,6 +43,7 @@ app.add_middleware(
 app.include_router(sensors.router)
 app.include_router(detections.router)
 app.include_router(alerts.router)
+app.include_router(auth.router)
 
 
 @app.get("/")

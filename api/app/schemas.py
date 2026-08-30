@@ -44,3 +44,29 @@ class AlertaOut(BaseModel):
     classe: str
     enviado_em: datetime
     lido: bool
+    
+
+class UsuarioRegistro(BaseModel):
+    nome: str
+    email: str
+    senha: str
+    papel: str = "produtor"
+
+
+class UsuarioLogin(BaseModel):
+    email: str
+    senha: str
+
+
+class TokenOut(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+class UsuarioOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    nome: str
+    email: str
+    papel: str
