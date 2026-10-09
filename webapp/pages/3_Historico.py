@@ -1,9 +1,9 @@
 import streamlit as st
+from theme import page_header
 
 from api_client import get_sensor_history
 
-st.set_page_config(page_title="Histórico", page_icon="📈", layout="wide")
-st.title("📈 Histórico Climático")
+page_header("Histórico", "Evolução do clima da estufa")
 
 estufa_id = st.session_state.get("estufa_id", 1)
 
@@ -21,11 +21,11 @@ if df.empty:
 else:
     tab1, tab2, tab3 = st.tabs(["Temperatura", "Umidade", "Luminosidade"])
     with tab1:
-        st.line_chart(df.set_index("registrado_em")["temperatura"])
+        st.line_chart(df.set_index("registrado_em")["temperatura"], color="#E85D3D")
     with tab2:
-        st.line_chart(df.set_index("registrado_em")["umidade"])
+        st.line_chart(df.set_index("registrado_em")["umidade"], color="#2E7CD6")
     with tab3:
-        st.line_chart(df.set_index("registrado_em")["luminosidade"])
+        st.line_chart(df.set_index("registrado_em")["luminosidade"], color="#D97706")
 
     st.subheader("Resumo do período")
     c1, c2, c3 = st.columns(3)

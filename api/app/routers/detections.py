@@ -4,23 +4,33 @@ Endpoints de detecção (RF01, RF02, RF06, RF07 da tese).
 POST /detections/analyze   -> recebe uma imagem, roda o YOLOv11 e salva o resultado
 GET  /detections           -> lista as últimas detecções de uma estufa
 """
+import os
 import shutil
 import uuid
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from app.config import UPLOADS_DIR
 from app.database import get_db
-from app.models import Alerta, Deteccao
+from app.email_utils import enviar_email
+from app.models import Alerta, Deteccao, Estufa
 from app.schemas import DeteccaoOut
 
 router = APIRouter(prefix="/detections", tags=["deteccoes"])
 
+CLASSE_LABEL = {
+    "bacteriano": "Bacteriano (Xanthomonas)",
+    "fungico": "Fúngico (Bremia)",
+}
+
+SITE_URL = os.environ.get("SITE_URL", "http://localhost:8501").rstrip("/")
+
 
 @router.post("/analyze", response_model=DeteccaoOut, status_code=201)
 def analyze_image(
+    background_tasks: BackgroundTasks,
     estufa_id: int = 1,
     imagem: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -55,6 +65,22 @@ def analyze_image(
         alerta = Alerta(deteccao_id=deteccao.id, usuario_id=None, lido=False)
         db.add(alerta)
         db.commit()
+
+        # Manda e-mail para o dono da estufa (em segundo plano, não trava a resposta)
+        estufa = db.query(Estufa).filter(Estufa.id == estufa_id).first()
+        if estufa and estufa.usuario:
+            classe = resultado["classe"]
+            doenca = CLASSE_LABEL.get(classe, classe)
+            assunto = f"Alerta na {estufa.nome}: {doenca} detectado"
+            corpo = (
+                f"Olá, {estufa.usuario.nome}!\n\n"
+                f"O sistema detectou um problema na estufa \"{estufa.nome}\".\n\n"
+                f"Doença: {doenca}\n"
+                f"Confiança: {resultado['confianca']:.0%}\n\n"
+                f"Ver alertas: {SITE_URL}/alertas\n"
+                f"Ver detecções: {SITE_URL}/deteccoes\n"
+            )
+            background_tasks.add_task(enviar_email, estufa.usuario.email, assunto, corpo)
 
     return deteccao
 
