@@ -12,3 +12,7 @@ ultralytics>=8.3
 
 # MQTT - só vai ser usado quando o ESP32 estiver pronto (Fase 2)
 paho-mqtt>=2.1
+
+# Login (auth_utils.py)
+bcrypt>=4.0
+PyJWT>=2.8
