@@ -15,7 +15,7 @@ import streamlit as st
 
 
 BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:8000")
-TIMEOUT = 5
+TIMEOUT = 60
 
 
 # ============================================================
