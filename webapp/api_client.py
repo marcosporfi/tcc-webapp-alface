@@ -3,7 +3,8 @@
 Cliente HTTP para a API do back-end.
 
 Centraliza todas as chamadas à API do projeto.
-Inclui autenticação por JWT.
+Inclui autenticação por JWT e configuração da URL
+para execução local ou hospedada no Streamlit Cloud.
 """
 
 import os
@@ -14,7 +15,19 @@ import requests
 import streamlit as st
 
 
-BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:8000")
+# Usa a configuração do Streamlit Secrets quando disponível.
+# Caso contrário, usa a variável de ambiente ou a URL online.
+try:
+    _secret_url = st.secrets.get("API_BASE_URL", "")
+except Exception:
+    _secret_url = ""
+
+BASE_URL = (
+    _secret_url
+    or os.environ.get("API_BASE_URL")
+    or "https://tcc-webapp-alface.onrender.com"
+).rstrip("/")
+
 TIMEOUT = 60
 
 
@@ -40,12 +53,22 @@ def login(email: str, senha: str) -> dict | None:
             return None
 
         resp.raise_for_status()
-
         dados = resp.json()
 
-        st.session_state["token"] = dados["access_token"]
+        token = dados.get("access_token")
+        if not token:
+            st.error("A API não retornou o token de autenticação.")
+            return None
 
+        st.session_state["token"] = token
         return dados
+
+    except requests.exceptions.Timeout:
+        st.error(
+            "A API demorou para responder. "
+            "Tente novamente em alguns instantes."
+        )
+        return None
 
     except requests.exceptions.RequestException as exc:
         st.error(
@@ -64,16 +87,14 @@ def logout() -> None:
 
 
 def _headers() -> dict:
-    """Retorna o header de autenticação."""
+    """Retorna o cabeçalho de autenticação."""
 
     token = st.session_state.get("token")
 
     if not token:
         return {}
 
-    return {
-        "Authorization": f"Bearer {token}"
-    }
+    return {"Authorization": f"Bearer {token}"}
 
 
 # ============================================================
@@ -81,6 +102,8 @@ def _headers() -> dict:
 # ============================================================
 
 def _get(path: str, params: dict | None = None) -> Any:
+    """Executa uma requisição GET autenticada."""
+
     try:
         resp = requests.get(
             f"{BASE_URL}{path}",
@@ -95,13 +118,16 @@ def _get(path: str, params: dict | None = None) -> Any:
             st.stop()
 
         resp.raise_for_status()
-
         return resp.json()
+
+    except requests.exceptions.Timeout:
+        st.error("A API demorou para responder. Tente novamente.")
+        st.stop()
 
     except requests.exceptions.RequestException as exc:
         st.error(
-            f"Não foi possível falar com a API em `{BASE_URL}{path}`.\n\n"
-            f"Detalhe: {exc}"
+            f"Não foi possível falar com a API em "
+            f"`{BASE_URL}{path}`.\n\nDetalhe: {exc}"
         )
         st.stop()
 
@@ -121,7 +147,6 @@ def get_sensor_history(
     estufa_id: int = 1,
     hours: int = 24,
 ) -> pd.DataFrame:
-
     data = _get(
         "/sensors/history",
         {
@@ -132,9 +157,10 @@ def get_sensor_history(
 
     df = pd.DataFrame(data)
 
-    if not df.empty:
+    if not df.empty and "registrado_em" in df.columns:
         df["registrado_em"] = pd.to_datetime(
-            df["registrado_em"]
+            df["registrado_em"],
+            errors="coerce",
         )
 
     return df
@@ -148,7 +174,6 @@ def get_detections(
     estufa_id: int = 1,
     limit: int = 20,
 ) -> pd.DataFrame:
-
     data = _get(
         "/detections",
         {
@@ -159,9 +184,10 @@ def get_detections(
 
     df = pd.DataFrame(data)
 
-    if not df.empty:
+    if not df.empty and "detectado_em" in df.columns:
         df["detectado_em"] = pd.to_datetime(
-            df["detectado_em"]
+            df["detectado_em"],
+            errors="coerce",
         )
 
     return df
@@ -175,7 +201,6 @@ def get_alerts(
     estufa_id: int = 1,
     unread_only: bool = False,
 ) -> pd.DataFrame:
-
     data = _get(
         "/alerts",
         {
@@ -186,15 +211,17 @@ def get_alerts(
 
     df = pd.DataFrame(data)
 
-    if not df.empty:
+    if not df.empty and "enviado_em" in df.columns:
         df["enviado_em"] = pd.to_datetime(
-            df["enviado_em"]
+            df["enviado_em"],
+            errors="coerce",
         )
 
     return df
 
 
 def mark_alert_read(alerta_id: int) -> None:
+    """Marca um alerta como lido."""
 
     try:
         resp = requests.post(
@@ -210,8 +237,8 @@ def mark_alert_read(alerta_id: int) -> None:
 
         resp.raise_for_status()
 
-    except requests.exceptions.RequestException as exc:
-        st.warning(
-            f"Não consegui marcar o alerta como lido: {exc}"
-        )
+    except requests.exceptions.Timeout:
+        st.warning("A API demorou para responder. Tente novamente.")
 
+    except requests.exceptions.RequestException as exc:
+        st.warning(f"Não consegui marcar o alerta como lido: {exc}")
